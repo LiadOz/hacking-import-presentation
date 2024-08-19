@@ -14,6 +14,8 @@ https://github.com/LiadOz/
 The python import machinery is composed of several steps and allows hook into it to extend the standard functionality -->
 
 ---
+layout: default
+---
 
 # Terms
 From python [glossary](https://docs.python.org/3/glossary.html):
@@ -68,7 +70,7 @@ from flask.json import loads
 <v-click>
 
 - `fullname`: `"flask.json"`
-- `path`: `[/Users/loz/workspace/env/lib/python3.8/site-packages/flask]`
+- `path`: `["/Users/loz/env/lib/python3.9/site-packages/flask"]`
 
 </v-click>
 
@@ -112,7 +114,8 @@ The loading is split into 2 stages, first creating the module object, and then e
 
 ---
 
-# The Default Finders
+# sys.meta_path
+A list of all the Finders that are used in the Import Machinery
 
 ```python
 import sys
@@ -135,7 +138,7 @@ sys.meta_path
 
 - `BuiltinImporter` - For modules like `sys` and `os`
 - `FrozenImporter` - For frozen modules
-- `PathFinder` - Modules that are located somewhere in the filesystem like datetime or flask
+- `PathFinder` - Modules that are located somewhere in the filesystem like `datetime` or `flask`
 
 </v-click>
 
@@ -155,12 +158,12 @@ By default python has 3 Finders, the builtin finder that is used for python's bu
 ```mermaid {scale: 0.8}
 graph TD;
     import["import datetime"] -->finders["Iterate over <font color='#FFB86C'><i><b>sys.meta_path</b></i></font> until a <font color='#6272A4'><i><b>ModuleSpec</b></i></font> is returned"];
-    finders -->|<font color='#6272A4'><i><b>ModuleSpec</b></i></font> created| create_module["Create the <font color='#50FA7B'><i><b>Module</b><i></font> from spec"];
+    finders -->|<font color='#6272A4'><i><b>ModuleSpec</b></i></font> created| create_module["Create the <font color='#C41E3A'><i><b>Module</b><i></font> from spec"];
     finders -->|None returned from all Finders| error["Raise an import error"];
-    create_module --> |<font color='#50FA7B'><i><b>Module</b></i></font> created| exec_module["Call exec_module"]
+    create_module --> |<font color='#C41E3A'><i><b>Module</b></i></font> created| exec_module["Call exec_module"]
     create_module --> |Error| error
     exec_module --> |Error| error
-    exec_module --> |Success| stop["Return the datetime <font color='#50FA7B'><i><b>Module</b></i></font>"]
+    exec_module --> |Success| stop["Return the datetime <font color='#C41E3A'><i><b>Module</b></i></font>"]
 ```
 </div>
 
@@ -181,6 +184,7 @@ Locations where the `PathFinder` searches for packages/modules
 
 System default
 ```python
+import sys
 sys.path
 ```
 ```markdown
@@ -257,41 +261,6 @@ class PathFinder:
 <!--The code for the default PathFinder from python source code, first you can see that it implements the same signature discussed earlier, as we said before, fullname is the full name of the requested module (including dots), path is the package path and we don't care about the target. Then you can see the location at which sys.path goes into play, when no path is passed, meaning that the module is not imported from a package. The the function returns a spec-->
 <!--There are 2.2M usages of sys.path in github, this is the line that really reads the data-->
 
-
----
-
-# Relative Imports
-
-```python
-from ..X.Y import Z
-```
-Resolving fullname 
-
-```python {1|3-7|8-12|14-18|all}
-def resolve_name(name, package):
-    """Resolve a relative module name to an absolute one."""
-    if not name.startswith('.'):
-        return name
-    elif not package:
-        raise ImportError(f'no package specified for {repr(name)} '
-                          '(required for relative module names)')
-    level = 0
-    for character in name:
-        if character != '.':
-            break
-        level += 1
-
-    bits = package.rsplit('.', level - 1)
-    if len(bits) < level:
-        raise ImportError('attempted relative import beyond top-level package')
-    base = bits[0]
-    return f'{base}.{name}' if name else base
-```
-
-<!--This function shows how are relative imports are resolved, the dot notation may be confused with relative paths, which are relative to the file location. However imports are relative to the package as can be seen in the following, each dot will represent a level, the first level is the current package/subpackage-->
-<!--This function is combined from 2 functions in python source code-->
-<!--Ask who has encountered the cannot import beyond top level module error-->
-
 ---
 
 # Extending standard imports
@@ -308,7 +277,7 @@ def resolve_name(name, package):
 
 Problem: We have a python package that can only be installed on linux hosts. While production does run on linux, in development some of the developers use MacOS.
 
-Solution: Create a new finder: for packages that are not found with the standard finder, it uses a proxy module from a remote linux host.
+Solution: Create a new finder - for packages that are not found with the standard finder, it uses a proxy module from a remote linux host.
 
 <!--We will use classic rpyc to import the module in a remote host. In rpyc you set up a rpyc server instance on a given host, then any client can run python code on that server-->
 
@@ -316,9 +285,10 @@ Solution: Create a new finder: for packages that are not found with the standard
 
 # RPyC Finder
 
-```python {all|6-7|9-16|19|all}
+```python {all|7-8|10-17|20|all}
 import rpyc
 import sys
+import importlib
 
 ALLOWED_MODULES = ['linux-only-package',]
 class RPyCFinder(importlib.abc.MetaPathFinder):
@@ -393,7 +363,7 @@ class AiFinder():  # pylint: disable=too-few-public-methods
 # AI Loader
 
 
-```python {all|7-8}
+```python {all|1,7-8}
 from module_found.lazy_object import LazyModule
 
 class AiLoader():
@@ -412,8 +382,13 @@ class AiLoader():
 # Module Found on PyPI
 <br/>
 
+
 ![pypi](/module_found_pypi.png)
+<br />
+
 https://pypi.org/project/module-found/
+
+https://github.com/LiadOz/module-found/
 
 
 ---
@@ -421,6 +396,6 @@ https://pypi.org/project/module-found/
 
 # But wait, there's more!
 
+* Relative imports - [PEP 328](https://peps.python.org/pep-0328/)
 * `sys.path_hooks` - to [hook](https://docs.python.org/3/library/sys.html#sys.path_hooks) into the PathFinder code
-* Lazy imports in python 3.12 [PEP-690](https://peps.python.org/pep-0690/)
-* [Namespace packages](https://docs.python.org/3/reference/import.html#namespace-packages)
+* Lazy imports in Python 3.12 [PEP-690](https://peps.python.org/pep-0690/)
