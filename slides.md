@@ -16,7 +16,6 @@ The python import machinery is composed of several steps and allows hook into it
 ---
 layout: default
 ---
-
 # Terms
 From python [glossary](https://docs.python.org/3/glossary.html):
 
@@ -47,9 +46,8 @@ layout: default
 ---
 
 # Finder
-
 ```python {all|2}
-class MyFinder(importlib.abc.MetaPathFinder):
+class ExampleFinder(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path, target = None) -> Optional[ModuleSpec]:
         ...
 ```
@@ -87,7 +85,7 @@ The module spec will contain the Loader that the finder defines it should use
 # Loader
 
 ```python {all|2,5}
-class MyLoader(importlib.abc.Loader):
+class ExampleLoader(importlib.abc.Loader):
     def create_module(self, spec: ModuleSpec) -> ModuleType:
         ...
 
@@ -155,11 +153,11 @@ By default python has 3 Finders, the builtin finder that is used for python's bu
 # Import Flow
 
 <div style="text-align: center;">
-```mermaid {scale: 0.8}
+```mermaid {scale: 0.9}
 graph TD;
     import["import datetime"] -->finders["Iterate over <font color='#FFB86C'><i><b>sys.meta_path</b></i></font> until a <font color='#6272A4'><i><b>ModuleSpec</b></i></font> is returned"];
     finders -->|<font color='#6272A4'><i><b>ModuleSpec</b></i></font> created| create_module["Create the <font color='#C41E3A'><i><b>Module</b><i></font> from spec"];
-    finders -->|None returned from all Finders| error["Raise an import error"];
+    finders -->|No spec found| error["Raise an import error"];
     create_module --> |<font color='#C41E3A'><i><b>Module</b></i></font> created| exec_module["Call exec_module"]
     create_module --> |Error| error
     exec_module --> |Error| error
@@ -182,21 +180,11 @@ class: text-center
 
 Locations where the `PathFinder` searches for packages/modules
 
-System default
+Inside a virtual environment
 ```python
 import sys
 sys.path
 ```
-```markdown
-['',
- '/Library/Frameworks/Python.framework/Versions/3.8/lib/python38.zip',
- '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8',
- '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/lib-dynload',
- '/Users/loz/Library/Python/3.8/lib/python/site-packages',
- '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages']
-```
-
-Inside a virtual environment
 ```markdown
 ['',
  '/Library/Frameworks/Python.framework/Versions/3.8/lib/python38.zip',
@@ -284,13 +272,12 @@ Solution: Create a new finder - for packages that are not found with the standar
 ---
 
 # RPyC Finder
-
 ```python {all|7-8|10-17|20|all}
 import rpyc
 import sys
 import importlib
 
-ALLOWED_MODULES = ['linux-only-package',]
+ALLOWED_MODULES = ['linux_only_package',]
 class RPyCFinder(importlib.abc.MetaPathFinder):
     def __init__(self):
         self.host = rpyc.classic.connect('ubuntu-host')
