@@ -181,10 +181,13 @@ class: text-center
 Locations where the `PathFinder` searches for packages/modules
 
 Inside a virtual environment
+
 ```python
 import sys
 sys.path
 ```
+<v-click>
+
 ```markdown
 ['',
  '/Library/Frameworks/Python.framework/Versions/3.8/lib/python38.zip',
@@ -192,6 +195,8 @@ sys.path
  '/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/lib-dynload',
  '/Users/loz/projects/hacking_import/env/lib/python3.8/site-packages']
 ```
+
+</v-click>
 
 <!--Inside the virtual environment the default site-packages directory of the os and user is replaced with the virtual environment site packages folder-->
 <!--Packages installed in editable mode will also appear in sys.path-->
@@ -252,10 +257,20 @@ class PathFinder:
 ---
 
 # Extending standard imports
+We have already seen everything needed to understand how to extend the import system
+
+<v-click>
 
 - Create a Finder with the `find_spec` function
 - Create a Loader with the `create_module` and `exec_module` functions
+
+<v-click>
+
 - Add the Finder to `sys.meta_path`
+
+</v-click>
+
+</v-click>
 
 
 ---
@@ -272,7 +287,7 @@ Solution: Create a new finder - for packages that are not found with the standar
 ---
 
 # RPyC Finder
-```python {all|7-8|10-17|20|all}
+```python {all|7-8|5,10-17|20|all}
 import rpyc
 import sys
 import importlib
@@ -319,19 +334,30 @@ class RPyCLoader(importlib.abc.Loader):
 ---
 
 # Module Found
+Don't try this at home!
+
 <br/>
 
-Problem: Python doesn't find the modules I ask it to
+Problem: Python doesn't find the modules I ask it to. Whether it was not installed, a spelling mistake in the name or the module just doesn't exist.
 
 <v-click>
+
 Solution: AI
+
+<v-click>
+
+Use Open AI API to generate module functions as they are being called
+
+</v-click>
+
 </v-click>
 
 ---
 
 # AI Finder
+No, really... I'm not joking!
 
-```python {all|4|6-11}
+```python {all|4|1,6-11}
 DISALLOWED_MODULES = ["apport_python_hook", "sitecustomize", "usercustomize"]
 class AiFinder():  # pylint: disable=too-few-public-methods
     def __init__(self, api_key: str) -> None:
@@ -348,6 +374,7 @@ class AiFinder():  # pylint: disable=too-few-public-methods
 ---
 
 # AI Loader
+For your safety, don't do this...
 
 
 ```python {all|1,7-8}
@@ -365,12 +392,23 @@ class AiLoader():
 ```
 
 ---
+layout: cover
+class: text-center
+---
+
+# Module Found Demo
+Seriously, DON'T try this at home... Like, ever!
+
+---
 
 # Module Found on PyPI
+Alright, here's how you do it at home...
+
 <br/>
 
 
 ![pypi](/module_found_pypi.png)
+
 <br />
 
 https://pypi.org/project/module-found/
